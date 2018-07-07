@@ -14,6 +14,5 @@ object WordCount {
         println("wordCounts: ")
         wordCounts.collect().foreach(println)
 
-
     }
 }
