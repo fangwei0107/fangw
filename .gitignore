@@ -1,0 +1,8 @@
+target/
+upload/
+
+### IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
