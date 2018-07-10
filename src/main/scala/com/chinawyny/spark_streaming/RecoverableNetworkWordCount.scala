@@ -11,7 +11,11 @@ import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
 import org.apache.spark.util.LongAccumulator
 
 /**
-  * 累加器，全局变量使用的Demo
+  * 累加器，全局变量使用的Demo，使用双检查单例模式获取
+  * 累加器（Accumulators）和广播变量（Broadcast variables）是无法从Spark Streaming的检查点中恢复回来的。
+  * 所以如果你开启了检查点功能，并同时在使用累加器和广播变量，那么最好是使用懒惰实例化的单例模式
+  *
+  * @author fangwei
   */
 object RecoverableNetworkWordCount {
 
@@ -72,7 +76,7 @@ object RecoverableNetworkWordCount {
             System.exit(1)
         }
 
-        val Array(ip, port, checkpointDirectory, outputPath) = args
+        val Array(ip, port, outputPath, checkpointDirectory) = args
 
         val ssc = StreamingContext.getOrCreate(checkpointDirectory, () => createContext(ip, port.toInt, outputPath, checkpointDirectory))
 
@@ -81,9 +85,12 @@ object RecoverableNetworkWordCount {
     }
 }
 
+/**
+  * 广播变量，在广播时就获得变量，各个worker在工作节点上使用
+  */
 object WordBlackList {
 
-    @volatile private var instance: Broadcast[Seq[String]] = null
+    @volatile private var instance: Broadcast[Seq[String]] = _
 
     def getInstance(sc: SparkContext): Broadcast[Seq[String]] = {
         if (instance == null) {
@@ -96,12 +103,14 @@ object WordBlackList {
         }
         instance
     }
-
 }
 
+/**
+  * 累加器，
+  */
 object DroppedWordsCounter {
 
-    @volatile private var instance: LongAccumulator = null
+    @volatile private var instance: LongAccumulator = _
 
     def getInstance(sc: SparkContext): LongAccumulator = {
         if (instance == null) {
@@ -113,5 +122,4 @@ object DroppedWordsCounter {
         }
         instance
     }
-
 }

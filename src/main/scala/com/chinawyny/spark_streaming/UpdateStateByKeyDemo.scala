@@ -27,7 +27,7 @@ object UpdateStateByKeyDemo {
         val ssc = new StreamingContext(sparkConf, Seconds(2))
 
         //使用UpdateStateByKey需要设置checkpoint目录
-        ssc.checkpoint("./statecheckpoint")
+        ssc.checkpoint("statecheckpoint")
 
         val initialRDD = ssc.sparkContext.parallelize(List(("hello", 1), ("world", 1)))
 
