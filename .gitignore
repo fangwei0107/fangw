@@ -6,3 +6,5 @@ upload/
 *.iws
 *.iml
 *.ipr
+out
+checkpoint/
