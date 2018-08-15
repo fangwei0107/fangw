@@ -24,28 +24,40 @@ object UpdateStateByKeyDemo {
 
         val sparkConf = new SparkConf().setAppName("UpdateStateByKeyDemo").setMaster("local[*]")
 
-        val ssc = new StreamingContext(sparkConf, Seconds(2))
+        val ssc = new StreamingContext(sparkConf, Seconds(5))
 
-        //使用UpdateStateByKey需要设置checkpoint目录
+        // 使用UpdateStateByKey需要设置checkpoint目录
         ssc.checkpoint("statecheckpoint")
 
         val initialRDD = ssc.sparkContext.parallelize(List(("hello", 1), ("world", 1)))
 
         val lines = ssc.socketTextStream(args(0), args(1).toInt)
 
-        val words = lines.flatMap(_.split(" "))
-        val wordCountDstream = words.map(x => (x, 1)).reduceByKey(_ + _)
-
-        //更新(word,count)，保留count为状态，跨时间间隔的累加
-        val mappingFunc = (word: String, one: Option[Int], state: State[Int]) => {
-            val sum = one.getOrElse(0) + state.getOption.getOrElse(0)
-            val output = (word, sum)
-            state.update(sum)
-            output
+        val mappingFunc: (String, Option[Int], State[Int]) => (String, Int) = (device: String, nowWp: Option[Int], lastWp: State[Int]) => {
+            // 如果历史wp为则更新
+            if (lastWp.getOption().isEmpty) {
+                lastWp.update(1)
+                (device, -1)
+            } else {
+                // 如果历史wp不为空，则进行计算，更新状态
+                val elec = nowWp.get - lastWp.getOption().getOrElse(0)
+                lastWp.update(nowWp.getOrElse(0))
+                (device, elec)
+            }
         }
 
-        val stateDstream = wordCountDstream.mapWithState(StateSpec.function(mappingFunc).initialState(initialRDD))
-        stateDstream.print()
+        val deviceWp = lines.map(x => {
+            val deviceWp = x.split(" ")
+            (deviceWp(0), deviceWp(1).toInt)
+        }).mapWithState(StateSpec.function(mappingFunc)).filter(_._2 != -1)
+        deviceWp.print()
+        deviceWp.foreachRDD(rdd => {
+            rdd.foreachPartition(partition => {
+                if (partition.nonEmpty) {
+                    println(partition.toList)
+                }
+            })
+        })
 
         ssc.start()
         ssc.awaitTermination()
