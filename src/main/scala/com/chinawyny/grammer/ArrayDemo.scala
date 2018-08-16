@@ -1,9 +1,5 @@
 package com.chinawyny.grammer
 
-import java.util
-
-import scala.util.Sorting
-
 
 object ArrayDemo {
 
@@ -12,5 +8,4 @@ object ArrayDemo {
         println(Array[Byte]())
         println(ArrayData.arr.getClass)
     }
-
 }
