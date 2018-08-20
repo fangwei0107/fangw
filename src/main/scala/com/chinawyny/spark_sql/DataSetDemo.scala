@@ -8,13 +8,14 @@ object DataSetDemo {
     def main(args: Array[String]): Unit = {
         val spark = SparkSession.builder().master("local").appName("DataSetDemo").getOrCreate()
         import spark.implicits._
-//        //用包含case class的RDD创建dateframe
-//        val peopleDF = spark.sparkContext.textFile("people2.txt").map(_.split(",")).map(p => Person(p(0), p(1).trim.toInt)).toDF()
-//        peopleDF.createTempView("people")
-//        val peopleDF1 = spark.sparkContext.textFile("people3.txt").map(_.split(",")).map(p => Person1(p(0), p(1).trim.toInt, p(2))).toDF()
-//        peopleDF1.createTempView("people1")
-//
-//        peopleDF.map(r => r.getString(0)).show()
+        //1.通过反射，将RDD转换为DataFrame,
+        val peopleDF = spark.sparkContext.textFile("people2.txt").map(_.split(",")).map(p => Person(p(0), p(1).trim.toInt)).toDF()
+        peopleDF.createTempView("people")
+        val peopleDF1 = spark.sparkContext.textFile("people3.txt").map(_.split(",")).map(p => Person1(p(0), p(1).trim.toInt, p(2))).toDF()
+        peopleDF1.createTempView("people1")
+
+        //因为有映射转换
+        peopleDF.map(r => r.getAs[String]("name"))
 //        val olderDF = spark.sql(
 //            "select p.name as p_name,p1.name as p1_name, p1.age as p1_age from people p inner join people1 p1 on p.age = p1.age where p1.age >= 18")
 //        olderDF.show()
@@ -23,13 +24,14 @@ object DataSetDemo {
 //        val peopleDS1 = peopleDF1.as[Person1]
 //        peopleDS1.select("name").show()
 //
+//        // 2.动态构造元数据
 //        //用Schema创建dataframe
 //        val schemaString = "name age"
 //        val schema = StructType(schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, true)))
 //        val peopleRDD = spark.sparkContext.textFile("people2.txt").map(_.split(",")).map(p => Row(p(0), p(1).trim))
 //        println("schemaDF")
 //        spark.createDataFrame(peopleRDD, schema).write.saveAsTable("people2")
-        spark.table("people2").show()
+//        spark.table("people2").show()
 
 
     }
